@@ -1,0 +1,610 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Concurrency Models Overview</title>
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<style>
+        code.smaller {
+            font-size: 0.6em;
+            line-height: 1.2em;
+        }
+    </style>
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<!-- TITLE -->
+				<section>
+					<h1>Concurrency models overview</h1>
+					<h3>Sebastian Rysztuń</h3>
+				</section>
+				<!-- END: TITLE -->
+			
+				<!-- AGENDA -->
+				<section>
+					<h2>Agenda</h2>
+					<ul>
+					  <li class="fragment">What is concurrency?</li>
+					  <li class="fragment">Motivation for this talk</li>
+					  <li class="fragment">Concurrency models overview</li>
+					</ul>
+
+					<aside class="notes">
+						I will not explaing some corner cases, what is mutext/deadlock etc.
+						I want to give you intuition what is conccurency, why it is desired in some cases
+						and overall knowledge how it can be implmented and what pros and cons have each approach.
+					</aside>
+				</section>
+				<!-- END: AGENDA -->
+			
+				<!-- CONCURECNY EXPLAINED -->
+				<section>
+					<section>
+						<h3>What is concurrency?</h3>
+						<ul>
+							<li class="fragment">do multiple things at once</li>
+							<li class="fragment">concurrency is not parallelism</li>
+						</ul>
+
+						<aside class="notes">
+							- Let's start with simple definition </br>
+							- it is crucial to distinguish between concurrency and parallelism, both often occur together but it is not a rule
+						</aside>
+					</section>
+
+					<section>
+						<h3>Concurrent vs parallel</h3>
+						<img src="/img/concurrent_vs_parallel.png">
+
+						<aside class="notes">
+								Concurrent: a few things at once </br>
+								Parallel: several things at the same time </br>
+								Example of both concurrent and parallel: teacher in class concurrently taking care of many students, in school many teachers in paraller do the same.
+						</aside>
+					</section>
+				</section>
+				<!-- END: CONCURECNY EXPLAINED -->
+
+				<!-- MOTIVATION -->
+				<section>
+						<h3>Motivation for this talk</h3>
+						<ul>
+							<li class="fragment">framework/model that I know is the best!</li>
+							<li class="fragment">how can we choose well if we don't know from what we can pick out?</li>
+						</ul>
+						
+						<aside class="notes">
+							- most of conference talks is Marketing-ish and focused only on one solution
+							or people are convinced that they using the best tool</br>
+						</aside>
+				</section>
+				<!-- END: MOTIVATION -->
+
+				<!-- END: THREADS -->
+				<section>
+					<section>
+						<h2>Let's start with threads</h2>
+
+						<blockquote cite="https://en.wikipedia.org/wiki/Thread_(computing)">
+							&ldquo;the smallest sequence of programmed instructions that can be managed independently by a scheduler &rdquo;
+						</blockquote>
+
+						<ul>
+							<li class="fragment">Java thread runs on a native thread ( 1:1 relation )</li>
+							<li class="fragment">thread creation and switching between threads is not for free</li>
+						</ul>
+						
+						<aside class="notes">
+								So we have definiton, let's see how we can visualize this model
+						</aside>
+					</section>
+
+					<section>
+						<h3>Thread model</h3>
+						<img src="/img/thread_model.png">
+
+						<aside class="notes">
+							- we have machine (CPU) </br>
+							- we have workers (threads) that want to do their work  </br>
+							- each of them receive access to machine for a period of time, only one can use machine at once
+						</aside>
+					</section>
+
+					<section>
+						<tr>
+							<td>
+								<pre><code class="hljs java">
+ class MyThread extends Thread {  
+	 public void run() {  
+		 System.out.println("thread is running...");  
+	 }  
+	 public static void main(String args[]) {  
+		 MyThread t1 = new MyThread();  
+		 t1.start();  
+	 }  
+ }   	
+								</code></pre>
+							</td>
+						</tr>
+					</section>
+
+					<section>
+							
+						<ul>
+							<h3 class="center" style="width: 100%; text-align:center">Pros</h3>
+							<li class="fragment">efficient if done right</li>
+							<li class="fragment">good choice for long CPU intensive processes</li>
+							</br></br>
+							<h3 class="fragment center" style="width: 100%; text-align:center">Cons</h3>
+							<li class="fragment">it is hard to do it right</li>
+							<li class="fragment">for not CPU intensive processes it could be too powerful</li>
+						</ul>
+
+						<aside class="notes">
+							- "it is close to metal", but it is not so easy to make it right - not easy to grasp, lot of corner cases etc. </br>
+							- we have workers (threads) that want to do their work  </br>
+							- each of them receive access to machine for a period of time, only one can use machine at once</br> 
+							</br>
+							- Java optimizations can mess with your concurrent thread based program </br>
+							- Concurrency in Java - just see how big and complex is this book to describe it and still it not cover everything </br>
+							- Analogy to languages - Assembler is also high perf but still we are using higher level languages - performance is not everything</br>
+							- you can create finite number of threads, for not CPU intensive operations it can be overkill
+						</aside>
+					</section>
+				</section>
+				<!-- END: THREADS -->
+
+				<!-- WHAT WE CAN DO BETTER -->
+				<section>
+					<section>
+						<h2>Common use case</h2>
+						<ul>
+								<li class="fragment">microservices</li>
+								<li class="fragment">we are mainly making network requests</li>
+								<li class="fragment">CRUD with some non intensive CPU validation</li>
+							</ul>
+						
+						<aside class="notes">
+							- 90% of time we're communicating between applications, our IO is mainly waiting for request response  </br>
+							- database where we are performing CPU intensive work are on different machine  </br>
+							- our applications are not performing complex CPU consuming logic
+						</aside>
+					</section>
+
+					<section>
+						<h2>What can we do better?</h2>
+						
+						<aside class="notes">
+							- in microservices mainly we are making http requests with some simple validations </br>
+							- for not CPU intensive applications meaybe 1:1 mapping to natvie threads is not the best option </br>
+							- maybe we can extract smaller piece of work 
+						</aside>
+					</section>
+
+					<section>
+						<h3>Introduce task</h3>
+						<img src="/img/introduce_task.png">
+
+						<aside class="notes">
+							- unit of work that need to be processed</br>
+							- each Thread can take care of few of units ( 1:N mapping )
+						</aside>
+					</section>
+				</section>
+				<!-- END: WHAT WE CAN DO BETTER -->
+
+				<!-- CALLBACKS -->
+				<section>
+					<section>
+						<h2>Callbacks</h2>
+						<tr>
+							<td>
+								<pre><code class="hljs scala">
+ def createUser(user: User): Future[UserId] = ???
+ def assignUserToRoles(userId: UserId, roles: List[Roles]): Future[Done] = ???
+ def activateUser(userId: UserId): Future[Done] = ???
+
+ for {
+	 userId <- createUser(userToCreate)
+	 userAssignedToRoles <- assignUserToRoles(userId, roles)
+	 userActivated <- activateUser(userId)
+ } yield Done  	
+								</code></pre>
+							</td>
+						</tr>
+						
+						<aside class="notes">
+							- we are registering flow of actions that should be done after previous step end
+							- JS Promise, RxJava, Reactor, Scala Future - each language have such solution
+							- observer pattern
+						</aside>
+					</section>
+
+					<section>
+						<ul>
+							<h3 class="center" style="width: 100%; text-align:center">Pros</h3>
+							<li class="fragment">very popular</li>
+							<li class="fragment">very good for sequential processing</li>
+							</br></br>
+							<h3 class="fragment center" style="width: 100%; text-align:center">Cons</h3>
+							<li class="fragment">callback hell</li>
+							<li class="fragment">blocking API -> thread is blocked</li>
+							<li class="fragment">problems with shared memory not solved</li>
+						</ul>
+
+						<aside class="notes">
+							- when we want to make more than one action on any step - merging and it stops to looks nice </br>
+						</aside>
+					</section>
+				</section>
+				<!-- END: CALLBACKS -->
+
+				<!-- GREEN THREADS -->
+				<section>
+					<section>
+						<h2>Green threads</h2>
+
+						<blockquote cite="https://en.wikipedia.org/wiki/Green_threads">
+							&ldquo;threads that are scheduled by a runtime library or virtual machine (VM) instead of natively by the underlying operating system (OS)&rdquo;
+						</blockquote>
+
+						<ul>
+							<li class="fragment">JVM world: Quasar Fibers, Kotlin Corutines, Scala Cats Fibers, other platforms e.g. Go goroutines</li>
+							<li class="fragment">Task - implmented fiber/coroutine</li>
+							<li class="fragment">Way to share state - no specific mechanism</li>
+							<li class="fragment">project Loom - Fibers, Continuations and Tail-Calls for the JVM</li>
+						</ul>
+						
+						<aside class="notes">
+							- till java 1.3 threads were "green threads" </br>
+							- from now for each model we will try to investigate what implement Task and how we can share state (if tehre is any mechanism that helps us) </br>
+						</aside>
+					</section>
+
+					<section>
+						<h3>Quasar Fibers</h3>
+						<tr>
+							<td>
+								<pre><code class="hljs smaller java">
+ // https://www.programcreek.com/java-api-examples/?api=co.paralleluniverse.fibers.Fiber
+ public static void main(String[] args) throws Exception {
+ 	 int count = 9999;
+ 	 CountDownLatch done = new CountDownLatch(count);
+
+	 Stopwatch stopwatch = Stopwatch.createStarted();
+	 IntStream.range(0,count).forEach(i ->
+			 new Fiber((SuspendableRunnable) () -> {
+					 try (CloseableHttpResponse response = client.execute(new HttpGet(url))){
+							 response.getStatusLine().getStatusCode();
+					 } catch (Exception e) {
+							 e.printStackTrace();
+					 } finally {
+							 done.countDown();
+					 }
+			 }).start()
+	 );
+	 done.await(15, TimeUnit.SECONDS);
+	 TaskRunner.print(
+					 new TaskRunner.Result(stopwatch.elapsed(TimeUnit.MILLISECONDS), Runtime.getRuntime().totalMemory()),
+					 done.getCount(),
+					 FiberHttpRequest.class.getSimpleName());
+ }   	
+								</code></pre>
+							</td>
+						</tr>
+					</section>
+
+					<section>
+							
+						<ul>
+							<h3 class="center" style="width: 100%; text-align:center">Pros</h3>
+							<li class="fragment">similiar API to Threads</li>
+							<li class="fragment">an idle fiber occupies ~400 bytes of RAM, java thread 512k</li>
+							<li class="fragment">blocking Fiber doesn't mean that we are blocking whole Thread</li>
+							</br></br>
+							<h3 class="fragment center" style="width: 100%; text-align:center">Cons</h3>
+							<li class="fragment">low level solution</li>
+							<li class="fragment">problems with shared memory not solved</li>
+						</ul>
+
+						<aside class="notes">
+							- we managed to be more performant by providing Task abstraction </br>
+							- could we somehow get rid of problems with shared memory?
+						</aside>
+					</section>
+				</section>
+				<!-- END: GREEN THREADS-->
+
+				<!-- CHANNELS -->
+				<section>
+					<section>
+						<h2>Channels</h2>
+
+						<ul>
+							<li class="fragment"><a href="https://assets.cs.ncl.ac.uk/seminars/224.pdf">Communicating sequential processes</a></li>
+							<li class="fragment">Task - green thread process</li>
+							<li class="fragment">Way to share state - passing state through channel</li>
+						</ul>
+						
+						<aside class="notes">
+							- if you want to share state send it by channel, other process can listen on state change and get message from channel </br>
+							- still we are using green thread processes so we can block during waiting for messages in channel </br>
+							- we are providing processes that produce or consume state </br>
+						</aside>
+					</section>
+
+					<section>
+						<h3>Go channels</h3>
+						<tr>
+							<td>
+								<pre><code class="hljs smaller go">
+ // https://gist.github.com/mattetti/3798173
+ func asyncHttpGets(urls []string) []*HttpResponse {
+	 ch := make(chan *HttpResponse, len(urls)) // buffered
+	 responses := []*HttpResponse{}
+	 for _, url := range urls {
+		 go func(url string) {
+			 fmt.Printf("Fetching %s \n", url)
+			 resp, err := http.Get(url)
+			 resp.Body.Close()
+			 ch <- &HttpResponse{url, resp, err}
+		 }(url)
+	 }
+
+	 for {
+		 select {
+		 case r := <-ch:
+			 fmt.Printf("%s was fetched\n", r.url)
+			 responses = append(responses, r)
+			 if len(responses) == len(urls) {
+				 return responses
+			 }
+		 case <-time.After(50 * time.Millisecond):
+			 fmt.Printf(".")
+		 }
+	 }
+
+	 return responses
+ } 	
+								</code></pre>
+							</td>
+						</tr>
+					</section>
+
+					<section>
+							
+						<ul>
+							<h3 class="center" style="width: 100%; text-align:center">Pros</h3>
+							<li class="fragment">channels keep state - no shared mutable state</li>
+							</br></br>
+							<h3 class="fragment center" style="width: 100%; text-align:center">Cons</h3>
+							<li class="fragment">losing sequential readability of code</li>
+						</ul>
+
+						<aside class="notes">
+							- decouple producer and consumer
+							- another problem solved
+						</aside>
+					</section>
+				</section>
+				<!-- END: CHANNELS-->
+
+				<!-- EVENT LOOP -->
+				<section>
+					<section>
+						<h2>Event Loop and Event bus - Vert.x</h2>
+
+						<ul>
+							<li class="fragment">Aplication as a many Node.js Applications</li>
+							<li class="fragment">Task - verticle</li>
+							<li class="fragment">Way to share state - passing state to Event Bus</li>
+						</ul>
+						
+						<aside class="notes">
+							- all events are available in one place - Event Bus </br>
+							- verticle - definition how handle specified type of event that appear on Event Bus
+						</aside>
+					</section>
+
+					<section>
+						<img src="/img/vertx_model.png">
+						<p style="font-size: 0.3em; margin: 0 0 0 0;">http://michaelkuty.github.io/vertx-gdg/img/hybrid.png</p>
+						<aside class="notes">
+							- what benefits this approach gives us? it solve the same problems like previous </br>
+							- additionally we have all events in one place ...
+						</aside>
+					</section>
+
+					<section>
+						<img src="/img/vertx_distribution.png">
+						<p style="font-size: 0.3em; margin: 0 0 0 0;">https://allegro.tech/img/articles/2015-11-06-real-time-web-application-with-websockets-and-vert.x/vertx_architecture.png</p>
+						<aside class="notes">
+							- we can distribute work among nodes and vertx support it
+						</aside>
+					</section>
+
+					<section>
+						<ul>
+							<h3 class="center" style="width: 100%; text-align:center">Pros</h3>
+							<li class="fragment">we can distribute work and it can be transparent for developer</li>
+							</br></br>
+							<h3 class="fragment center" style="width: 100%; text-align:center">Cons</h3>
+							<li class="fragment">more complex solution that previously described</li>
+						</ul>
+
+						<aside class="notes">
+							- distributed computaiton - something can go wrong, how to recover?
+						</aside>
+					</section>
+				</section>
+				<!-- END: EVENT LOOP-->
+
+				<!-- ACTORS -->
+				<section>
+					<section>
+						<h2>Actors</h2>
+						<blockquote cite="https://en.wikipedia.org/wiki/Actor_model">
+							&ldquo;An actor is a computational entity that, in response to a message it receives, can concurrently </br>
+							 	- send a finite number of messages to other actors;</br>
+							 	- create a finite number of new actors;</br>
+ 								- designate the behavior to be used for the next message it receives.&rdquo;
+						</blockquote>
+					</section>
+						
+					<section>
+						<h2>Actors</h2>
+						<ul>
+							<li>The actor model originated in 1973 by Carl Hewitt</li>
+							<li class="fragment">JVM world: Akka, other platforms e.g. Erlang/Elixir</li>
+							<li class="fragment">Task - handling message</li>
+							<li class="fragment">Way to share state - passing messages between actors</li>
+						</ul>
+						
+						<aside class="notes">
+							- on Erlang each "actor" has its own copy of message - each "actor" has its own GC
+						</aside>
+					</section>
+
+					<section>
+						<h3>Akka actor</h3>
+						<tr>
+								<td>
+									<pre><code class="hljs scala">
+ class HelloActor extends Actor {
+	 def receive = {
+		 case "hello" => println("hello world!")
+		 case _       => println("Couldn't process unrecognized message")
+	 }
+ }
+
+ object Main extends App {
+	 val system = ActorSystem("HelloSystem")
+	 // default Actor constructor
+	 val helloActor = system.actorOf(Props[HelloActor], name = "helloactor")
+	 helloActor ! "hello"
+	 helloActor ! "other message"
+ } 	
+									</code></pre>
+								</td>
+							</tr>
+					</section>
+
+					<section>
+						<img src="/img/akka_example.jpg">
+						<p style="font-size: 0.3em; margin: 0 0 0 0;">https://www.codeguru.com/imagesvr_ce/4692/AKKA1.jpg</p>
+						<aside class="notes">
+							- we can model our programs as cumunnication betwen agregates - very intuitive approach
+						</aside>
+					</section>
+
+					<section>
+						<img src="/img/akka_actor_hierarchy.png">
+						<p style="font-size: 0.3em; margin: 0 0 0 0;">http://markusjura.github.io/akka-intro-slides/assets/hierarchy-3.png</p>
+						<aside class="notes">
+							- fail fast and fault tolerant applications
+						</aside>
+					</section>
+
+					<section>
+						<ul>
+							<h3 class="center" style="width: 100%; text-align:center">Pros</h3>
+							<li class="fragment">supervision and fault tolerancy</li>
+							<li class="fragment">intuitive for modeling domain</li>
+							</br></br>
+							<h3 class="fragment center" style="width: 100%; text-align:center">Cons</h3>
+							<li class="fragment">possible mailbox overflow</li>
+							<li class="fragment">actors don't prevent deadlocks</li>
+						</ul>
+
+						<aside class="notes">
+						</aside>
+					</section>
+				</section>
+				<!-- END: ACTORS-->
+
+				<!-- SUMMARY -->
+				<section>
+					<section>
+						<h2>Summary</h2>
+						<ul>
+							<li class="fragment">each next model gives you more possibilities but there is nothing for free</li>
+							<li class="fragment">avoid shared state</li>
+							<li class="fragment">underneath they are still finitie number of threads</li>
+							<li class="fragment">there is no Holy Grail</li>
+						</ul>
+						<aside class="notes">
+							- Higher abstraction -> more overhead, something for something </br>
+							- in actors we are solving a big class of problems just by fact that you cannot change state from outside </br>
+							- calculation power/context swithing ability is finite - model change will not solve your all problems magically </br>
+							- you need to decide which abstraction use based on case and your experience </br>
+						</aside>
+					</section>
+
+					<section>
+						<img src="/img/feture_matrix.png">
+						<p style="font-size: 0.3em; margin: 0 0 0 0;">https://www.youtube.com/watch?v=EMv_8dxSqdE</p>
+						<aside class="notes">
+						</aside>
+					</section>
+
+					<section>
+						<img src="/img/determinism_chart.png">
+						<p style="font-size: 0.3em; margin: 0 0 0 0;">https://www.youtube.com/watch?v=QFB_3uUGzR4</p>
+						<aside class="notes">
+						</aside>
+					</section>
+				</section>
+				<!-- END: SUMMARY -->
+
+				<!-- USEFUL RESOURCES -->
+				<section>
+					<h2>Useful sources</h2>
+					<ul>
+						<li><a href="https://pragprog.com/book/pb7con/seven-concurrency-models-in-seven-weeks">Seven Concurrency Models in Seven Weeks</a></li>
+						<li><a href="http://docs.paralleluniverse.co/quasar/">Quasar Fibers and more</a></li>
+						<li><a href="https://kotlinlang.org/docs/reference/coroutines-overview.html">Kotlin Corutines</a></li>
+						<li><a href="https://vertx.io/docs/">Vert.x</a></li>
+						<li><a href="https://doc.akka.io/docs/akka/2.5.3/scala/guide/actors-intro.html">Akka actors</a></li>
+						<li><a href="https://clojure.org/reference/refs">STM in Clojure</a></li>
+					</ul>
+				</section>
+				<!-- END: USEFUL RESOURCES -->
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>
